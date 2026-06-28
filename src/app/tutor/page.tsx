@@ -591,11 +591,8 @@ function GoalScreen({
 }) {
   const [showPicker, setShowPicker] = useState(false);
 
-  const options = CONCEPT_IDS.filter(
-    (id) =>
-      isUnlocked(id, profile.concepts) &&
-      profile.concepts[id].status !== "dominado" &&
-      id !== suggestedConceptId
+  const allUnlocked = CONCEPT_IDS.filter((id) =>
+    isUnlocked(id, profile.concepts)
   );
 
   return (
@@ -609,10 +606,8 @@ function GoalScreen({
         </div>
 
         <div className="border border-border rounded px-4 py-3">
-          <p className="text-sm font-medium">{sessionGoal}</p>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            {CONCEPTS[suggestedConceptId].name}
-          </p>
+          <p className="text-sm font-medium">{CONCEPTS[suggestedConceptId].name}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">{sessionGoal}</p>
         </div>
 
         {!showPicker ? (
@@ -620,29 +615,35 @@ function GoalScreen({
             <Button onClick={onAccept} className="w-full">
               Começar
             </Button>
-            {options.length > 0 && (
-              <Button
-                variant="ghost"
-                className="w-full text-muted-foreground text-sm"
-                onClick={() => setShowPicker(true)}
-              >
-                Escolher outro conceito
-              </Button>
-            )}
+            <Button
+              variant="ghost"
+              className="w-full text-muted-foreground text-sm"
+              onClick={() => setShowPicker(true)}
+            >
+              Escolher outro conceito
+            </Button>
           </div>
         ) : (
           <div className="space-y-2">
-            <p className="text-xs text-muted-foreground">Conceitos disponíveis:</p>
-            <div className="space-y-1">
-              {options.map((id) => (
-                <button
-                  key={id}
-                  onClick={() => onChoose(id)}
-                  className="w-full text-left px-3 py-2 rounded border border-border text-sm hover:bg-secondary transition-colors"
-                >
-                  {CONCEPTS[id].name}
-                </button>
-              ))}
+            <p className="text-xs text-muted-foreground">Conceitos desbloqueados:</p>
+            <div className="space-y-1 max-h-72 overflow-y-auto">
+              {allUnlocked.map((id) => {
+                const status = profile.concepts[id].status;
+                const isSuggested = id === suggestedConceptId;
+                const isMasteredConcept = status === "dominado";
+                return (
+                  <button
+                    key={id}
+                    onClick={() => onChoose(id)}
+                    className="w-full text-left px-3 py-2 rounded border border-border text-sm hover:bg-secondary transition-colors flex items-center justify-between"
+                  >
+                    <span>{CONCEPTS[id].name}</span>
+                    <span className="text-[10px] text-muted-foreground shrink-0 ml-2">
+                      {isSuggested ? "sugerido" : isMasteredConcept ? "revisar" : ""}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
             <Button
               variant="ghost"

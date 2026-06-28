@@ -21,9 +21,9 @@ import type { ConceptId, StudentConcepts } from "@/types/domain";
 const STATUS_STYLES: Record<string, { bg: string; text: string; border: string }> = {
   active:   { bg: "#18181B", text: "#FAFAFA", border: "#18181B" },
   mastered: { bg: "#14532d", text: "#86efac", border: "#22c55e" },
-  progress: { bg: "#E4E4E7", text: "#3F3F46", border: "#D4D4D8" },
-  unseen:   { bg: "#F4F4F5", text: "#A1A1AA", border: "#E4E4E7" },
-  blocked:  { bg: "#FAFAFA", text: "#D4D4D8", border: "#F4F4F5" },
+  progress: { bg: "#A1A1AA", text: "#18181B", border: "#71717A" },
+  unseen:   { bg: "#D4D4D8", text: "#3F3F46", border: "#A1A1AA" },
+  blocked:  { bg: "#E4E4E7", text: "#A1A1AA", border: "#D4D4D8" },
 };
 
 function getStatus(

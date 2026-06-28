@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { getStudentProfile, updateConceptState } from "@/lib/firestore";
-import { CONCEPTS } from "@/lib/domain";
+import { CONCEPTS, CONCEPT_IDS } from "@/lib/domain";
 import {
   applyAnswer,
   isMastered,
@@ -64,6 +64,7 @@ export default function TutorPage() {
   const [chatError, setChatError] = useState<string | null>(null);
   const [sessionGoal, setSessionGoal] = useState("");
   const [completed, setCompleted] = useState(false);
+  const [goalPending, setGoalPending] = useState(false);
 
   // Ref para estado de sessão (não precisa re-render)
   const session = useRef<SessionRef>({
@@ -109,7 +110,25 @@ export default function TutorPage() {
 
     session.current.activeConceptId = nextConcept;
     session.current.hintLevel = 0;
-    presentQuestion(p, nextConcept);
+    setGoalPending(true); // aguarda o aluno aceitar ou trocar a meta
+  }
+
+  function handleGoalAccept() {
+    setGoalPending(false);
+    if (profile && session.current.activeConceptId) {
+      presentQuestion(profile, session.current.activeConceptId);
+    }
+  }
+
+  function handleGoalChoose(conceptId: ConceptId) {
+    if (!profile) return;
+    session.current.activeConceptId = conceptId;
+    session.current.hintLevel = 0;
+    const newGoal = `Dominar: ${CONCEPTS[conceptId].name}`;
+    session.current.sessionGoal = newGoal;
+    setSessionGoal(newGoal);
+    setGoalPending(false);
+    presentQuestion(profile, conceptId);
   }
 
   // ─── Apresentar pergunta ────────────────────────────────────────────────────
@@ -400,6 +419,18 @@ export default function TutorPage() {
 
   if (completed) return <CompletionScreen profile={profile} />;
 
+  if (goalPending && session.current.activeConceptId) {
+    return (
+      <GoalScreen
+        profile={profile}
+        suggestedConceptId={session.current.activeConceptId}
+        sessionGoal={sessionGoal}
+        onAccept={handleGoalAccept}
+        onChoose={handleGoalChoose}
+      />
+    );
+  }
+
   const activeConceptId = session.current.activeConceptId;
 
   return (
@@ -538,6 +569,90 @@ function CompletionScreen({ profile }: { profile: StudentProfile }) {
         >
           Voltar ao início
         </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Tela de meta de sessão ───────────────────────────────────────────────────
+
+function GoalScreen({
+  profile,
+  suggestedConceptId,
+  sessionGoal,
+  onAccept,
+  onChoose,
+}: {
+  profile: StudentProfile;
+  suggestedConceptId: ConceptId;
+  sessionGoal: string;
+  onAccept: () => void;
+  onChoose: (id: ConceptId) => void;
+}) {
+  const [showPicker, setShowPicker] = useState(false);
+
+  const options = CONCEPT_IDS.filter(
+    (id) =>
+      isUnlocked(id, profile.concepts) &&
+      profile.concepts[id].status !== "dominado" &&
+      id !== suggestedConceptId
+  );
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background px-4">
+      <div className="w-full max-w-sm space-y-6">
+        <div className="space-y-1">
+          <h1 className="text-xl font-semibold tracking-tight">
+            Olá, {profile.name.split(" ")[0]}
+          </h1>
+          <p className="text-sm text-muted-foreground">Sugestão para hoje:</p>
+        </div>
+
+        <div className="border border-border rounded px-4 py-3">
+          <p className="text-sm font-medium">{sessionGoal}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {CONCEPTS[suggestedConceptId].name}
+          </p>
+        </div>
+
+        {!showPicker ? (
+          <div className="space-y-2">
+            <Button onClick={onAccept} className="w-full">
+              Começar
+            </Button>
+            {options.length > 0 && (
+              <Button
+                variant="ghost"
+                className="w-full text-muted-foreground text-sm"
+                onClick={() => setShowPicker(true)}
+              >
+                Escolher outro conceito
+              </Button>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <p className="text-xs text-muted-foreground">Conceitos disponíveis:</p>
+            <div className="space-y-1">
+              {options.map((id) => (
+                <button
+                  key={id}
+                  onClick={() => onChoose(id)}
+                  className="w-full text-left px-3 py-2 rounded border border-border text-sm hover:bg-secondary transition-colors"
+                >
+                  {CONCEPTS[id].name}
+                </button>
+              ))}
+            </div>
+            <Button
+              variant="ghost"
+              className="w-full text-muted-foreground text-xs"
+              onClick={() => setShowPicker(false)}
+            >
+              Voltar à sugestão
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );

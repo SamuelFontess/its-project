@@ -152,7 +152,7 @@ export type LLMPayload =
 
 export interface DiagnosticLLMResponse {
   correct: boolean;
-  justification: string;
+  justification?: string;
 }
 
 export interface EvaluationLLMResponse {

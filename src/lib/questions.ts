@@ -187,13 +187,13 @@ export const TUTOR_QUESTIONS: Record<ConceptId, TutorQuestion[]> = {
     {
       id: "C3-2",
       conceptId: "C3",
-      question: "Qual a distância entre os pontos A(1, 2) e B(4, 6)?",
-      expectedAnswer: "5. Usando d = √((4-1)² + (6-2)²) = √(9+16) = √25 = 5.",
+      question: "O gráfico de uma função existe apenas nos quadrantes 1 e 2. O que isso nos diz sobre os valores de y da função?",
+      expectedAnswer: "Todos os valores de y são positivos (y > 0), pois nos quadrantes 1 e 2 a coordenada y é sempre positiva.",
       difficulty: 2,
       hints: [
-        "Use a fórmula da distância: d = √((x₂-x₁)² + (y₂-y₁)²).",
-        "Δx = 3, Δy = 4. Calcule √(9 + 16).",
-        "√25 = 5.",
+        "Lembre: Q1 tem x>0 e y>0; Q2 tem x<0 e y>0.",
+        "Se o gráfico só existe no Q1 e Q2, o que as coordenadas y têm em comum?",
+        "Em ambos os quadrantes y é positivo, portanto todos os valores de saída da função são maiores que zero.",
       ],
     },
     {
@@ -237,13 +237,13 @@ export const TUTOR_QUESTIONS: Record<ConceptId, TutorQuestion[]> = {
     {
       id: "C4-3",
       conceptId: "C4",
-      question: "Para f(x) = √(x - 3), determine o domínio analiticamente.",
-      expectedAnswer: "Domínio = [3, +∞). O radicando deve ser ≥ 0: x - 3 ≥ 0 → x ≥ 3.",
+      question: "O gráfico de uma função forma uma curva que parte do ponto (1, 0), sobe até o ponto mais alto (3, 5) e volta a zero em (5, 0), sem existir fora desse intervalo. Identifique o domínio e a imagem.",
+      expectedAnswer: "Domínio = [1, 5] (valores de x para os quais o gráfico existe). Imagem = [0, 5] (valores de y que o gráfico assume, do mínimo 0 ao máximo 5).",
       difficulty: 3,
       hints: [
-        "A raiz quadrada só está definida para radicandos não negativos.",
-        "Resolva a inequação x - 3 ≥ 0.",
-        "x ≥ 3, portanto domínio = [3, +∞).",
+        "Domínio: observe os valores de x onde o gráfico começa e termina.",
+        "Imagem: observe os valores de y — qual o menor e o maior que o gráfico atinge?",
+        "O gráfico vai de x=1 a x=5 (domínio), e de y=0 a y=5 (imagem). Ambos incluem os extremos.",
       ],
     },
   ],

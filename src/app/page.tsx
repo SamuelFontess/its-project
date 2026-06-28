@@ -222,7 +222,10 @@ export default function DiagnosticPage() {
           disabled={evaluating}
           className="resize-none text-sm"
           onKeyDown={(e) => {
-            if (e.key === "Enter" && e.ctrlKey) handleAnswer();
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              handleAnswer();
+            }
           }}
         />
         {error && (

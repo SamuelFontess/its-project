@@ -168,12 +168,17 @@ export default function TutorPage() {
   const handleSend = useCallback(async (text: string) => {
     if (!profile || !session.current.activeConceptId) return;
 
+    // Captura histórico com a mensagem do aluno incluída antes do state atualizar
+    const history: ChatMessage[] = [
+      ...messages,
+      { role: "student" as const, content: text },
+    ].slice(-12);
+
     addMessage("student", text);
     setIsLoading(true);
     setChatError(null);
 
     const conceptId = session.current.activeConceptId;
-    const history = getHistory();
 
     let evalResult: EvaluationLLMResponse;
     try {

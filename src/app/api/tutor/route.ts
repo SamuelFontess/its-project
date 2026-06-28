@@ -32,7 +32,7 @@ RESPOSTA ESPERADA: ${payload.expectedAnswer}
 RESPOSTA DO ALUNO: ${payload.studentAnswer}
 
 Responda SOMENTE com este JSON (sem mais nada):
-{"correct": true, "justification": "frase curta em português"}`;
+{"correct": true}`;
     }
 
     case "tutor": {
@@ -80,11 +80,11 @@ RESPOSTA ESPERADA: ${payload.expectedAnswer}
 RESPOSTA DO ALUNO: ${payload.studentAnswer}
 NÍVEL DE HINT: ${payload.hintLevel}/3
 
-Responda SOMENTE com este JSON (sem mais nada):
-{"correct": true, "feedback": "1-2 frases diretas em português", "hint": "dica se errou"}
+Responda SOMENTE com JSON (sem mais nada). Use um destes formatos:
+Se acertou: {"correct": true, "feedback": "1-2 frases"}
+Se errou:   {"correct": false, "feedback": "1-2 frases", "hint": "dica"}
 
-${payload.hintLevel >= 3 ? "A dica pode ser quase explícita, mas sem dar a resposta completa." : "A dica deve ser leve e instigante."}
-Se acertou, omita o campo hint.`;
+${payload.hintLevel >= 3 ? "A dica pode ser quase explícita, mas sem entregar a resposta completa." : "A dica deve ser leve e instigante, não revelar a resposta."}`;
     }
 
     case "backtrack": {

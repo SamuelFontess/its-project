@@ -304,6 +304,28 @@ export default function TutorPage() {
     fromId: ConceptId,
     toId: ConceptId
   ) {
+    // Reseta attempts e consecutiveCorrect do conceito que causou retrocesso.
+    // Sem isso, ao retornar ao conceito o aluno seria imediatamente retrocedido
+    // de novo (attempts >= 3 e score < 30 ainda verdadeiros).
+    const resetFromState = {
+      ...p.concepts[fromId],
+      attempts: 0,
+      consecutiveCorrect: 0,
+    };
+    const profileAfterReset: StudentProfile = {
+      ...p,
+      concepts: { ...p.concepts, [fromId]: resetFromState },
+    };
+    setProfile(profileAfterReset);
+    updateConceptState(
+      p.uid,
+      fromId,
+      profileAfterReset.concepts,
+      p.xp,
+      p.level,
+      []
+    ).catch(console.error);
+
     setIsLoading(true);
     try {
       const res = await fetch("/api/tutor", {
@@ -330,7 +352,7 @@ export default function TutorPage() {
     session.current.backtrackedConceptIds.add(fromId);
     session.current.activeConceptId = toId;
     session.current.hintLevel = 0;
-    presentQuestion(p, toId);
+    presentQuestion(profileAfterReset, toId);
   }
 
   // ─── Seleção manual pelo aluno ───────────────────────────────────────────────

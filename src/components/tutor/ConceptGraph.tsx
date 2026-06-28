@@ -19,11 +19,11 @@ import type { ConceptId, StudentConcepts } from "@/types/domain";
 // ─── Paleta de status ─────────────────────────────────────────────────────────
 
 const STATUS_STYLES: Record<string, { bg: string; text: string; border: string }> = {
-  active:   { bg: "#FAFAFA", text: "#09090B", border: "#FAFAFA" },
+  active:   { bg: "#18181B", text: "#FAFAFA", border: "#18181B" },
   mastered: { bg: "#14532d", text: "#86efac", border: "#22c55e" },
-  progress: { bg: "#52525B", text: "#F4F4F5", border: "#A1A1AA" },
-  unseen:   { bg: "#3F3F46", text: "#D4D4D8", border: "#71717A" },
-  blocked:  { bg: "#27272A", text: "#71717A", border: "#3F3F46" },
+  progress: { bg: "#E4E4E7", text: "#3F3F46", border: "#D4D4D8" },
+  unseen:   { bg: "#F4F4F5", text: "#A1A1AA", border: "#E4E4E7" },
+  blocked:  { bg: "#FAFAFA", text: "#D4D4D8", border: "#F4F4F5" },
 };
 
 function getStatus(
@@ -63,8 +63,8 @@ function ConceptNode({ data }: { data: NodeData }) {
           opacity: data.status === "blocked" ? 0.4 : 1,
           boxShadow:
             data.status === "active"
-              ? "0 0 0 2px #FAFAFA, 0 0 14px rgba(250,250,250,0.12)"
-              : "none",
+              ? "0 0 0 2px #18181B, 0 2px 8px rgba(0,0,0,0.12)"
+              : "0 1px 3px rgba(0,0,0,0.06)",
           transition: "all 150ms ease",
           cursor: data.status === "blocked" || data.status === "active" ? "default" : "pointer",
           fontFamily: "inherit",
@@ -135,7 +135,7 @@ export function ConceptGraph({ concepts, activeConceptId, onNodeClick }: Concept
           id: `${prereqId}-${id}`,
           source: prereqId,
           target: id,
-          style: { stroke: "#3F3F46", strokeWidth: 1 },
+          style: { stroke: "#D4D4D8", strokeWidth: 1 },
         }))
       ),
     []
@@ -153,7 +153,7 @@ export function ConceptGraph({ concepts, activeConceptId, onNodeClick }: Concept
   );
 
   return (
-    <div style={{ width: "100%", height: "100%", background: "#09090B" }}>
+    <div style={{ width: "100%", height: "100%", background: "#FFFFFF" }}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -166,18 +166,18 @@ export function ConceptGraph({ concepts, activeConceptId, onNodeClick }: Concept
         elementsSelectable={false}
         panOnDrag
         zoomOnScroll
-        style={{ background: "#09090B" }}
+        style={{ background: "#FFFFFF" }}
         proOptions={{ hideAttribution: true }}
       >
-        <Background color="#1C1C1E" gap={24} size={1} />
+        <Background color="#E4E4E7" gap={24} size={1} />
         <MiniMap
           nodeColor={(node) => {
             const id = node.id as ConceptId;
             const s = getStatus(id, concepts, activeConceptId);
             return STATUS_STYLES[s].bg;
           }}
-          style={{ background: "#18181B", border: "1px solid #27272A" }}
-          maskColor="rgba(0,0,0,0.5)"
+          style={{ background: "#F4F4F5", border: "1px solid #E4E4E7" }}
+          maskColor="rgba(255,255,255,0.5)"
         />
       </ReactFlow>
     </div>

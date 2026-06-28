@@ -57,12 +57,12 @@ Responda SOMENTE com este JSON (sem mais nada):
 ${manualNote}
 PERGUNTA A APRESENTAR: ${payload.question}
 
-Apresente esta pergunta de forma conversacional e direta. Regras obrigatórias:
-- NÃO explique, resuma ou dê pistas do conceito antes de perguntar
-- NÃO diga "você já sabe que..." ou qualquer frase que entregue a resposta
-- Apenas conduza o aluno a pensar, sem revelar nada da resposta
-- Score baixo (< 40): tom mais acolhedor; score alto (>= 60): tom mais desafiador
-- Máximo 2 frases antes da pergunta em si`;
+Apresente EXATAMENTE esta pergunta ao aluno, de forma conversacional. Regras obrigatórias:
+- Escreva no máximo 1 frase de introdução e depois a pergunta literal do banco
+- NÃO explique, resuma ou antecipe o conceito
+- NÃO use "você já sabe que...", "lembre-se que..." ou qualquer pista da resposta
+- NÃO termine sem incluir a pergunta completa
+- Score < 40: tom acolhedor; score >= 60: tom desafiador`;
     }
 
     case "evaluation": {
@@ -134,7 +134,7 @@ export async function POST(req: NextRequest) {
         model: GROQ_MODEL,
         messages,
         temperature: payload.mode === "tutor" || payload.mode === "backtrack" ? 0.7 : 0.1,
-        max_tokens: 512,
+        max_tokens: payload.mode === "tutor" || payload.mode === "backtrack" ? 1024 : 512,
       }),
     });
 

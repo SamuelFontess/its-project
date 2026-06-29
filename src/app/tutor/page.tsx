@@ -217,10 +217,14 @@ export default function TutorPage() {
           history,
         }),
       });
-      if (!res.ok) throw new Error("api_error");
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err?.error ?? "Erro ao avaliar resposta.");
+      }
       evalResult = await res.json();
-    } catch {
-      setChatError("Erro ao avaliar resposta. Tente novamente.");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Erro ao avaliar resposta. Tente novamente.";
+      setChatError(msg);
       session.current.pendingRetry = () => handleSend(text);
       setIsLoading(false);
       return;

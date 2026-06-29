@@ -145,12 +145,23 @@ export async function POST(req: NextRequest) {
     });
 
     if (!response.ok) {
-      const err = await response.text();
-      console.error("[Groq] Erro HTTP:", response.status, err);
-      return NextResponse.json(
-        { error: `Erro da API: ${response.status}` },
-        { status: 502 }
-      );
+      let groqMsg = "";
+      try {
+        const errBody = await response.json();
+        groqMsg = errBody?.error?.message ?? JSON.stringify(errBody);
+      } catch {
+        groqMsg = await response.text().catch(() => "");
+      }
+      console.error("[Groq] Erro HTTP:", response.status, groqMsg);
+
+      let userError = "Serviço de IA temporariamente indisponível. Tente novamente.";
+      if (response.status === 429) {
+        userError = "Limite de requisições atingido. Aguarde alguns segundos e tente novamente.";
+      } else if (response.status === 401 || response.status === 403) {
+        userError = "Erro de autenticação com o serviço de IA. Contate o suporte.";
+      }
+
+      return NextResponse.json({ error: userError }, { status: 502 });
     }
 
     const data = await response.json();

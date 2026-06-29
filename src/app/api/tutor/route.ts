@@ -60,8 +60,9 @@ PERGUNTA A APRESENTAR: ${payload.question}
 
 Apresente EXATAMENTE esta pergunta ao aluno, de forma conversacional. Regras obrigatórias:
 - Escreva no máximo 1 frase de introdução e depois a pergunta literal do banco
+- A frase de introdução fala apenas sobre o contexto da sessão (conceito, nome do aluno) — NUNCA menciona a resposta, a lógica por trás da pergunta ou qualquer pista do que o aluno deve responder
 - NÃO explique, resuma ou antecipe o conceito
-- NÃO use "você já sabe que...", "lembre-se que..." ou qualquer pista da resposta
+- NÃO use "você já sabe que...", "lembre-se que...", "vamos entender por que X acontece..." ou qualquer estrutura que revele a resposta
 - NÃO termine sem incluir a pergunta completa
 - Score < 40: tom acolhedor; score >= 60: tom desafiador`;
     }
@@ -84,7 +85,7 @@ TENTATIVAS COM DICA: ${payload.hintLevel}/3
 CRITÉRIOS DE AVALIAÇÃO:
 - correct: true se o aluno demonstrou a ideia central, mesmo com palavras diferentes ou resposta curta
 - correct: false se a resposta está errada conceitualmente, completamente vaga ("não sei") ou em branco
-- Feedback de ACERTO: confirmação natural em 1 frase, sem repetir a resposta do aluno
+- Feedback de ACERTO: confirmação natural em 1 frase, sem repetir a resposta do aluno; varie o estilo a cada acerto (não use sempre "você capturou a essência de..." — use formas diferentes como confirmação direta, elogio específico ao raciocínio, etc.)
 - Feedback de ERRO: aponte apenas o que está faltando ou errado — NUNCA cite o gabarito, nunca diga "a resposta correta é..."
 
 Responda SOMENTE com JSON (sem mais nada):

@@ -81,10 +81,8 @@ RESPOSTA DO ALUNO: ${payload.studentAnswer}
 NÍVEL DE HINT: ${payload.hintLevel}/3
 
 Responda SOMENTE com JSON (sem mais nada). Use um destes formatos:
-Se acertou: {"correct": true, "feedback": "1-2 frases"}
-Se errou:   {"correct": false, "feedback": "1-2 frases", "hint": "dica"}
-
-${payload.hintLevel >= 3 ? "A dica pode ser quase explícita, mas sem entregar a resposta completa." : "A dica deve ser leve e instigante, não revelar a resposta."}`;
+Se acertou: {"correct": true, "feedback": "frase curta de confirmação"}
+Se errou:   {"correct": false, "feedback": "frase curta apontando o erro sem dar a resposta"}`;
     }
 
     case "backtrack": {

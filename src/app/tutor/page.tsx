@@ -48,6 +48,7 @@ interface SessionRef {
   currentQuestionId: string | null;
   currentQuestionText: string | null;
   currentExpectedAnswer: string | null;
+  currentQuestionHints: [string, string, string] | null;
   pendingRetry: (() => Promise<void>) | null;
   sessionGoal: string;
   /** Conceitos que causaram retrocesso — para detectar comeback badge */
@@ -74,6 +75,7 @@ export default function TutorPage() {
     currentQuestionId: null,
     currentQuestionText: null,
     currentExpectedAnswer: null,
+    currentQuestionHints: null,
     pendingRetry: null,
     sessionGoal: "",
     backtrackedConceptIds: new Set(),
@@ -145,6 +147,7 @@ export default function TutorPage() {
     session.current.currentQuestionId = question.id;
     session.current.currentQuestionText = question.question;
     session.current.currentExpectedAnswer = question.expectedAnswer;
+    session.current.currentQuestionHints = question.hints;
 
     const history = getHistory();
     setIsLoading(true);
@@ -223,15 +226,21 @@ export default function TutorPage() {
       return;
     }
 
-    // Aplica feedback ao chat (hint concatenado quando errou)
-    const tutorMessage =
-      !evalResult.correct && evalResult.hint
-        ? `${evalResult.feedback}\n\n${evalResult.hint}`
-        : evalResult.feedback;
-    addMessage("tutor", tutorMessage);
-    if (!evalResult.correct && evalResult.hint) {
+    // Usa hint pré-escrito do banco de perguntas (não o gerado pelo LLM)
+    const prewrittenHint =
+      !evalResult.correct && session.current.currentQuestionHints
+        ? session.current.currentQuestionHints[Math.min(session.current.hintLevel, 2)]
+        : null;
+
+    if (!evalResult.correct) {
       session.current.hintLevel = Math.min(3, session.current.hintLevel + 1);
     }
+
+    const tutorMessage =
+      !evalResult.correct && prewrittenHint
+        ? `${evalResult.feedback}\n\nDica: ${prewrittenHint}`
+        : evalResult.feedback;
+    addMessage("tutor", tutorMessage);
 
     // Atualiza estado
     const prevState = profile.concepts[conceptId];
@@ -301,14 +310,30 @@ export default function TutorPage() {
       return;
     }
 
-    if (shouldBacktrack(newConceptState)) {
+    if (!evalResult.correct && shouldBacktrack(newConceptState)) {
       const target = getBacktrackTarget(conceptId);
       if (target) {
         await triggerBacktrack(updatedProfile, conceptId, target);
       } else {
-        // C1 sem retrocesso — reinicia inner loop
+        // C1 sem retrocesso — reinicia inner loop com reset para evitar
+        // que shouldBacktrack dispare imediatamente na volta
+        const resetState = {
+          ...updatedProfile.concepts[conceptId],
+          attempts: 0,
+          consecutiveCorrect: 0,
+        };
+        const profileReset = {
+          ...updatedProfile,
+          concepts: { ...updatedProfile.concepts, [conceptId]: resetState },
+        };
+        setProfile(profileReset);
+        updateConceptState(
+          profile.uid, conceptId, profileReset.concepts,
+          profileReset.xp, profileReset.level, []
+        ).catch(console.error);
         session.current.hintLevel = 0;
-        presentQuestion(updatedProfile, conceptId);
+        session.current.usedQuestionIds[conceptId] = new Set();
+        presentQuestion(profileReset, conceptId);
       }
       return;
     }

@@ -17,9 +17,10 @@ Você nunca menciona que é uma IA, modelo de linguagem ou qualquer tecnologia.
 Comunique-se em português do Brasil, de forma conversacional e objetiva.
 Nunca dê a resposta diretamente. Não faça perguntas além da que já foi apresentada.`;
   }
-  return `Você é um avaliador preciso de respostas matemáticas.
+  return `Você é um avaliador de compreensão matemática.
 Responda SOMENTE com JSON válido, sem texto adicional, sem markdown.
-Seja tolerante com linguagem informal — o que importa é se o conceito foi demonstrado.`;
+Avalie se o conceito foi compreendido — linguagem informal, resposta curta ou palavras diferentes do gabarito são irrelevantes se a ideia central estiver correta.
+NUNCA revele, repita ou parafraseie o gabarito no campo feedback.`;
 }
 
 function buildUserPrompt(payload: LLMPayload): string {
@@ -72,17 +73,23 @@ Apresente EXATAMENTE esta pergunta ao aluno, de forma conversacional. Regras obr
               .map((m) => `${m.role === "tutor" ? "Euler" : "Aluno"}: ${m.content}`)
               .join("\n")
           : "";
-      return `${historyText ? `HISTÓRICO:\n${historyText}\n\n` : ""}Avalie a resposta do aluno.
+      return `${historyText ? `HISTÓRICO:\n${historyText}\n\n` : ""}Avalie se o aluno demonstrou compreensão do conceito — não se a resposta é idêntica ao gabarito.
 
 CONCEITO: ${payload.conceptName}
 PERGUNTA: ${payload.question}
-RESPOSTA ESPERADA: ${payload.expectedAnswer}
+GABARITO (uso interno — NUNCA revelar ao aluno): ${payload.expectedAnswer}
 RESPOSTA DO ALUNO: ${payload.studentAnswer}
-NÍVEL DE HINT: ${payload.hintLevel}/3
+TENTATIVAS COM DICA: ${payload.hintLevel}/3
 
-Responda SOMENTE com JSON (sem mais nada). Use um destes formatos:
-Se acertou: {"correct": true, "feedback": "frase curta de confirmação"}
-Se errou:   {"correct": false, "feedback": "frase curta apontando o erro sem dar a resposta"}`;
+CRITÉRIOS DE AVALIAÇÃO:
+- correct: true se o aluno demonstrou a ideia central, mesmo com palavras diferentes ou resposta curta
+- correct: false se a resposta está errada conceitualmente, completamente vaga ("não sei") ou em branco
+- Feedback de ACERTO: confirmação natural em 1 frase, sem repetir a resposta do aluno
+- Feedback de ERRO: aponte apenas o que está faltando ou errado — NUNCA cite o gabarito, nunca diga "a resposta correta é..."
+
+Responda SOMENTE com JSON (sem mais nada):
+Se acertou: {"correct": true, "feedback": "..."}
+Se errou:   {"correct": false, "feedback": "..."}`;
     }
 
     case "backtrack": {

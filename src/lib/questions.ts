@@ -561,7 +561,7 @@ export function getQuestionsForConcept(conceptId: ConceptId): TutorQuestion[] {
 }
 
 /** Seleciona uma pergunta não usada na sessão para um conceito.
- *  Se todas foram usadas, reinicia priorizando as de maior dificuldade. */
+ *  Se todas foram usadas, limpa o set e reinicia priorizando as de maior dificuldade. */
 export function selectQuestion(
   conceptId: ConceptId,
   usedIds: Set<string>
@@ -571,6 +571,8 @@ export function selectQuestion(
 
   if (unused.length > 0) return unused[0];
 
-  // Banco esgotado: reinicia priorizando maior dificuldade
+  // Banco esgotado: limpa o set in-place para desbloquear as perguntas
+  // e reinicia priorizando maior dificuldade
+  usedIds.clear();
   return [...questions].sort((a, b) => b.difficulty - a.difficulty)[0];
 }

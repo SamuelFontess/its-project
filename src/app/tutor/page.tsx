@@ -53,6 +53,8 @@ interface SessionRef {
   sessionGoal: string;
   /** Conceitos que causaram retrocesso — para detectar comeback badge */
   backtrackedConceptIds: Set<ConceptId>;
+  /** Turnos conversacionais consecutivos sem tentativa de resposta na pergunta atual */
+  conversationalTurns: number;
 }
 
 // ─── Componente ───────────────────────────────────────────────────────────────
@@ -79,6 +81,7 @@ export default function TutorPage() {
     pendingRetry: null,
     sessionGoal: "",
     backtrackedConceptIds: new Set(),
+    conversationalTurns: 0,
   });
 
   // Auth gate + carregamento do perfil
@@ -148,6 +151,7 @@ export default function TutorPage() {
     session.current.currentQuestionText = question.question;
     session.current.currentExpectedAnswer = question.expectedAnswer;
     session.current.currentQuestionHints = question.hints;
+    session.current.conversationalTurns = 0;
 
     const history = getHistory();
     setIsLoading(true);
@@ -215,6 +219,7 @@ export default function TutorPage() {
           studentAnswer: text,
           hintLevel: session.current.hintLevel,
           history,
+          conversationalTurns: session.current.conversationalTurns,
         }),
       });
       if (!res.ok) {
@@ -230,26 +235,39 @@ export default function TutorPage() {
       return;
     }
 
-    // Usa hint pré-escrito do banco de perguntas (não o gerado pelo LLM)
+    // Aluno tirou dúvida / pediu explicação — responde sem pontuar
+    if (evalResult.type === "conversation") {
+      addMessage("tutor", evalResult.response);
+      session.current.conversationalTurns += 1;
+      setIsLoading(false);
+      return;
+    }
+
+    // Tentativa de resposta — fluxo normal de avaliação
+    const { correct: isCorrect, feedback } = evalResult;
+
+    // Usa hint pré-escrito do banco de perguntas
     const prewrittenHint =
-      !evalResult.correct && session.current.currentQuestionHints
+      !isCorrect && session.current.currentQuestionHints
         ? session.current.currentQuestionHints[Math.min(session.current.hintLevel, 2)]
         : null;
 
-    if (!evalResult.correct) {
+    if (!isCorrect) {
       session.current.hintLevel = Math.min(3, session.current.hintLevel + 1);
     }
 
+    session.current.conversationalTurns = 0;
+
     const tutorMessage =
-      !evalResult.correct && prewrittenHint
-        ? `${evalResult.feedback}\n\nDica: ${prewrittenHint}`
-        : evalResult.feedback;
+      !isCorrect && prewrittenHint
+        ? `${feedback}\n\nDica: ${prewrittenHint}`
+        : feedback;
     addMessage("tutor", tutorMessage);
 
     // Atualiza estado
     const prevState = profile.concepts[conceptId];
-    const newConceptState = applyAnswer(prevState, evalResult.correct, session.current.hintLevel);
-    const newXp = profile.xp + xpForAnswer(evalResult.correct);
+    const newConceptState = applyAnswer(prevState, isCorrect, session.current.hintLevel);
+    const newXp = profile.xp + xpForAnswer(isCorrect);
 
     let updatedProfile = {
       ...profile,
@@ -314,7 +332,7 @@ export default function TutorPage() {
       return;
     }
 
-    if (!evalResult.correct && shouldBacktrack(newConceptState)) {
+    if (!isCorrect && shouldBacktrack(newConceptState)) {
       const target = getBacktrackTarget(conceptId);
       if (target) {
         await triggerBacktrack(updatedProfile, conceptId, target);
@@ -343,7 +361,7 @@ export default function TutorPage() {
     }
 
     // Continua no mesmo conceito com nova pergunta
-    if (evalResult.correct) {
+    if (isCorrect) {
       session.current.hintLevel = 0;
       presentQuestion(updatedProfile, conceptId);
     }

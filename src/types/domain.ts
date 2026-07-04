@@ -134,6 +134,8 @@ export interface EvaluationPayload {
   studentAnswer: string;
   hintLevel: number;
   history: ChatMessage[];
+  /** Quantas respostas conversacionais consecutivas houve nesta pergunta (sem tentativa de resposta) */
+  conversationalTurns: number;
 }
 
 export interface BacktrackPayload {
@@ -155,8 +157,6 @@ export interface DiagnosticLLMResponse {
   justification?: string;
 }
 
-export interface EvaluationLLMResponse {
-  correct: boolean;
-  feedback: string;
-  hint?: string;
-}
+export type EvaluationLLMResponse =
+  | { type: "answer"; correct: boolean; feedback: string }
+  | { type: "conversation"; response: string };

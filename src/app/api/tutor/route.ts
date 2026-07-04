@@ -74,23 +74,34 @@ Apresente EXATAMENTE esta pergunta ao aluno, de forma conversacional. Regras obr
               .map((m) => `${m.role === "tutor" ? "Euler" : "Aluno"}: ${m.content}`)
               .join("\n")
           : "";
-      return `${historyText ? `HISTÓRICO:\n${historyText}\n\n` : ""}Avalie se o aluno demonstrou compreensão do conceito — não se a resposta é idêntica ao gabarito.
 
-CONCEITO: ${payload.conceptName}
-PERGUNTA: ${payload.question}
-GABARITO (uso interno — NUNCA revelar ao aluno): ${payload.expectedAnswer}
-RESPOSTA DO ALUNO: ${payload.studentAnswer}
+      const nudge =
+        payload.conversationalTurns >= 2
+          ? "\n- Ao final da explicação, encoraje gentilmente o aluno a tentar responder agora"
+          : "";
+
+      return `${historyText ? `HISTÓRICO:\n${historyText}\n\n` : ""}CONCEITO: ${payload.conceptName}
+PERGUNTA FEITA AO ALUNO: ${payload.question}
+GABARITO (uso interno — NUNCA revelar): ${payload.expectedAnswer}
+MENSAGEM DO ALUNO: ${payload.studentAnswer}
 TENTATIVAS COM DICA: ${payload.hintLevel}/3
 
-CRITÉRIOS DE AVALIAÇÃO:
-- correct: true se o aluno demonstrou a ideia central, mesmo com palavras diferentes ou resposta curta
-- correct: false se a resposta está errada conceitualmente, completamente vaga ("não sei") ou em branco
-- Feedback de ACERTO: confirmação natural em 1 frase, sem repetir a resposta do aluno; varie o estilo a cada acerto (não use sempre "você capturou a essência de..." — use formas diferentes como confirmação direta, elogio específico ao raciocínio, etc.)
-- Feedback de ERRO: aponte apenas o que está faltando ou errado — NUNCA cite o gabarito, nunca diga "a resposta correta é..."
+TAREFA: Determine se o aluno está tentando responder à pergunta OU pedindo ajuda/explicação/esclarecimento.
 
-Responda SOMENTE com JSON (sem mais nada):
-Se acertou: {"correct": true, "feedback": "..."}
-Se errou:   {"correct": false, "feedback": "..."}`;
+Se for TENTATIVA DE RESPOSTA (afirmação, resposta direta, mesmo que incerta):
+- correct: true se demonstrou a ideia central, mesmo com palavras diferentes ou resposta curta
+- correct: false se a resposta está errada conceitualmente, vaga ("não sei", "talvez") ou em branco
+- Feedback de ACERTO: confirmação natural em 1 frase; varie o estilo (confirmação direta, elogio ao raciocínio, etc.)
+- Feedback de ERRO: aponte o que está faltando ou errado — NUNCA cite o gabarito, nunca diga "a resposta correta é..."
+Responda: {"type": "answer", "correct": true/false, "feedback": "..."}
+
+Se for DÚVIDA ou PEDIDO DE EXPLICAÇÃO (pergunta, "não entendi", "pode explicar", "por que errei", etc.):
+- Explique o conceito ou esclareça a dúvida sem revelar a resposta à pergunta
+- Máximo 3 frases, tom de tutor direto e encorajador${nudge}
+- NUNCA revele o gabarito nem a resposta esperada
+Responda: {"type": "conversation", "response": "..."}
+
+Responda SOMENTE com JSON válido, sem texto adicional.`;
     }
 
     case "backtrack": {

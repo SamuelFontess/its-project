@@ -68,6 +68,7 @@ export default function TutorPage() {
   const [sessionGoal, setSessionGoal] = useState("");
   const [completed, setCompleted] = useState(false);
   const [goalPending, setGoalPending] = useState(false);
+  const [lastXpGain, setLastXpGain] = useState<number | null>(null);
 
   // Ref para estado de sessão (não precisa re-render)
   const session = useRef<SessionRef>({
@@ -267,7 +268,12 @@ export default function TutorPage() {
     // Atualiza estado
     const prevState = profile.concepts[conceptId];
     const newConceptState = applyAnswer(prevState, isCorrect, session.current.hintLevel);
-    const newXp = profile.xp + xpForAnswer(isCorrect);
+    const answerXp = xpForAnswer(isCorrect);
+    const masteryXp = isMastered(newConceptState) ? xpForMastery() : 0;
+    const gainedXp = answerXp + masteryXp;
+    const newXp = profile.xp + gainedXp;
+
+    if (gainedXp > 0) setLastXpGain(gainedXp);
 
     let updatedProfile = {
       ...profile,
@@ -279,10 +285,6 @@ export default function TutorPage() {
 
     if (isMastered(newConceptState)) {
       justMasteredId = conceptId;
-      updatedProfile = {
-        ...updatedProfile,
-        xp: newXp + xpForMastery(),
-      };
     }
 
     updatedProfile = {
@@ -320,6 +322,7 @@ export default function TutorPage() {
     }
 
     if (isMastered(newConceptState)) {
+      addMessage("system", `${CONCEPTS[conceptId].name} dominado · +${masteryXp + answerXp} XP`);
       session.current.hintLevel = 0;
       const next = selectNextConcept(updatedProfile.concepts);
       if (next) {
@@ -502,7 +505,7 @@ export default function TutorPage() {
                 onNodeClick={handleNodeClick}
               />
             </div>
-            <ProgressPanel profile={profile} />
+            <ProgressPanel profile={profile} lastXpGain={lastXpGain} onXpGainShown={() => setLastXpGain(null)} />
           </SheetContent>
         </Sheet>
       </header>
@@ -518,7 +521,7 @@ export default function TutorPage() {
               onNodeClick={handleNodeClick}
             />
           </div>
-          <ProgressPanel profile={profile} />
+          <ProgressPanel profile={profile} lastXpGain={lastXpGain} onXpGainShown={() => setLastXpGain(null)} />
         </aside>
 
         {/* Coluna direita — chat */}

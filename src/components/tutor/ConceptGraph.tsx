@@ -45,6 +45,7 @@ interface NodeData {
   label: string;
   conceptId: ConceptId;
   status: string;
+  score: number;
 }
 
 function ConceptNode({ data }: { data: NodeData }) {
@@ -74,6 +75,26 @@ function ConceptNode({ data }: { data: NodeData }) {
           {data.conceptId}
         </div>
         <div style={{ fontSize: 11, lineHeight: 1.35 }}>{data.label}</div>
+        {data.score > 0 && data.status !== "blocked" && (
+          <div
+            style={{
+              marginTop: 6,
+              height: 2,
+              borderRadius: 1,
+              background: "rgba(0,0,0,0.15)",
+              overflow: "hidden",
+            }}
+          >
+            <div
+              style={{
+                height: "100%",
+                width: `${data.score}%`,
+                background: data.status === "mastered" ? "#22C55E" : "#A1A1AA",
+                transition: "width 400ms ease",
+              }}
+            />
+          </div>
+        )}
       </div>
       <Handle type="source" position={Position.Bottom} style={{ opacity: 0 }} />
     </>
@@ -120,6 +141,7 @@ export function ConceptGraph({ concepts, activeConceptId, onNodeClick }: Concept
             label: CONCEPTS[id].name,
             conceptId: id,
             status,
+            score: concepts[id]?.score ?? 0,
           } satisfies NodeData,
           draggable: false,
           selectable: status !== "blocked",

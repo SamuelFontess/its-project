@@ -50,15 +50,26 @@ export function ChatInterface({
   return (
     <div className="flex flex-col h-full">
       {/* Header do chat */}
-      <div className="flex-none px-4 py-3 border-b border-border space-y-1">
+      <div className="flex-none px-4 py-3 border-b border-border space-y-2">
         <div className="flex items-center justify-between">
           <span className="text-xs text-muted-foreground">
             {conceptName ?? "Carregando…"}
           </span>
           {activeConceptId && (
-            <span className="text-xs text-muted-foreground">
-              {conceptScore}/100
-            </span>
+            <div className="flex items-center gap-2">
+              <div className="w-20 h-1.5 bg-border rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-500"
+                  style={{
+                    width: `${conceptScore}%`,
+                    background: conceptScore >= 80 ? "#22C55E" : "#71717A",
+                  }}
+                />
+              </div>
+              <span className="text-xs text-muted-foreground tabular-nums w-8 text-right">
+                {conceptScore}%
+              </span>
+            </div>
           )}
         </div>
         <p className="text-xs text-muted-foreground/60 truncate">{sessionGoal}</p>
@@ -136,6 +147,18 @@ export function ChatInterface({
 // ─── Sub-componentes ──────────────────────────────────────────────────────────
 
 function MessageBubble({ message }: { message: ChatMessage }) {
+  if (message.role === "system") {
+    return (
+      <div className="flex items-center gap-3 py-1">
+        <div className="flex-1 h-px bg-border" />
+        <span className="text-[10px] text-muted-foreground/50 whitespace-nowrap shrink-0">
+          {message.content}
+        </span>
+        <div className="flex-1 h-px bg-border" />
+      </div>
+    );
+  }
+
   const isTutor = message.role === "tutor";
   return (
     <div className={cn("flex gap-2 items-start", !isTutor && "flex-row-reverse")}>

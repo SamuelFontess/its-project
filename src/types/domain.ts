@@ -97,7 +97,7 @@ export interface SessionState {
 }
 
 export interface ChatMessage {
-  role: "tutor" | "student";
+  role: "tutor" | "student" | "system";
   content: string;
 }
 

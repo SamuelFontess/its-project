@@ -196,7 +196,7 @@ export default function TutorPage() {
   function looksLikeQuestion(text: string): boolean {
     const t = text.toLowerCase().trim();
     // Marcadores explícitos de confusão — sempre dúvida independente de pontuação
-    if (/não entend|nao entend|n[aã]o (sei|consigo)|pode (explicar|repetir|ajudar)|me (explica|ajuda)|como (assim|é que|funciona niss)|o que (é|significa|quer dizer)|por que (isso|seria assim)|explica aí|n[aã]o (tô|to|estou) entend|o que quer dizer/.test(t)) return true;
+    if (/não entend|nao entend|n[aã]o (sei|consigo)|pode (explicar|repetir|ajudar)|me (explica|ajuda)|como assim|\bo que (é|significa|quer dizer)\b|\bpor que (isso|seria assim)\b|explica aí|n[aã]o (tô|to|estou) entend/.test(t)) return true;
     // Termina em "?" SÓ se começar com palavra interrogativa
     // Evita capturar respostas incertas como "acho que é o 2?" ou "seria 3?"
     if (t.endsWith("?")) {

@@ -211,7 +211,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Modos texto livre
-  if (payload.mode === "tutor" || payload.mode === "backtrack") {
+  if (payload.mode === "tutor" || payload.mode === "backtrack" || payload.mode === "conversation") {
     return NextResponse.json({ text: raw });
   }
 

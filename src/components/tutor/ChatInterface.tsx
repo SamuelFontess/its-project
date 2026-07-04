@@ -18,8 +18,6 @@ interface ChatInterfaceProps {
   onSend: (text: string) => void;
   onRetry: () => void;
   sessionGoal: string;
-  isInConversation: boolean;
-  onReadyToAnswer: () => void;
 }
 
 export function ChatInterface({
@@ -31,8 +29,6 @@ export function ChatInterface({
   onSend,
   onRetry,
   sessionGoal,
-  isInConversation,
-  onReadyToAnswer,
 }: ChatInterfaceProps) {
   const [input, setInput] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -115,28 +111,12 @@ export function ChatInterface({
       </ScrollArea>
 
       {/* Input */}
-      <div className="flex-none px-4 py-3 border-t border-border space-y-2">
-        {isInConversation && (
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] text-muted-foreground/50">
-              Modo explicação — continue perguntando ou responda quando estiver pronto
-            </span>
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-6 px-2 text-[10px] shrink-0"
-              onClick={onReadyToAnswer}
-              disabled={isLoading}
-            >
-              Quero responder
-            </Button>
-          </div>
-        )}
+      <div className="flex-none px-4 py-3 border-t border-border">
         <div className="flex gap-2 items-end">
           <Textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder={isInConversation ? "Continue a conversa…" : "Responda aqui…"}
+            placeholder="Responda ou tire uma dúvida…"
             rows={2}
             className="resize-none text-sm flex-1"
             disabled={isLoading}
@@ -156,7 +136,7 @@ export function ChatInterface({
             Enviar
           </Button>
         </div>
-        <p className="text-[10px] text-muted-foreground/40">
+        <p className="text-[10px] text-muted-foreground/40 mt-1">
           Enter para enviar · Shift+Enter para nova linha
         </p>
       </div>

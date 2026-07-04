@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { onAuthStateChanged } from "firebase/auth";
+import { onAuthStateChanged, signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { getStudentProfile, updateConceptState } from "@/lib/firestore";
 import { CONCEPTS, CONCEPT_IDS } from "@/lib/domain";
@@ -55,8 +55,6 @@ interface SessionRef {
   backtrackedConceptIds: Set<ConceptId>;
   /** Turnos conversacionais consecutivos sem tentativa de resposta na pergunta atual */
   conversationalTurns: number;
-  /** Quando "conversation", bloqueia avaliação até o aluno clicar "Quero responder" */
-  conversationMode: "answer" | "conversation";
 }
 
 // ─── Componente ───────────────────────────────────────────────────────────────
@@ -71,7 +69,6 @@ export default function TutorPage() {
   const [completed, setCompleted] = useState(false);
   const [goalPending, setGoalPending] = useState(false);
   const [lastXpGain, setLastXpGain] = useState<number | null>(null);
-  const [isInConversation, setIsInConversation] = useState(false);
 
   // Ref para estado de sessão (não precisa re-render)
   const session = useRef<SessionRef>({
@@ -86,7 +83,6 @@ export default function TutorPage() {
     sessionGoal: "",
     backtrackedConceptIds: new Set(),
     conversationalTurns: 0,
-    conversationMode: "answer",
   });
 
   // Auth gate + carregamento do perfil
@@ -157,8 +153,6 @@ export default function TutorPage() {
     session.current.currentExpectedAnswer = question.expectedAnswer;
     session.current.currentQuestionHints = question.hints;
     session.current.conversationalTurns = 0;
-    session.current.conversationMode = "answer";
-    setIsInConversation(false);
 
     const history = getHistory();
     setIsLoading(true);
@@ -196,12 +190,12 @@ export default function TutorPage() {
     }
   }, []);
 
-  // ─── Modo conversa: aluno sinaliza que quer responder ────────────────────────
+  // ─── Detecção de intenção (heurística) ──────────────────────────────────────
 
-  function handleReadyToAnswer() {
-    session.current.conversationMode = "answer";
-    session.current.conversationalTurns = 0;
-    setIsInConversation(false);
+  function looksLikeQuestion(text: string): boolean {
+    const t = text.toLowerCase().trim();
+    if (t.endsWith("?")) return true;
+    return /não entend|nao entend|n[aã]o sei|nao sei|pode (explicar|repetir|ajudar)|me (explica|ajuda)|como (assim|é que|funciona)|o que (é|significa|quer dizer)|por que (isso|é|seria)|explica aí|não (tô|to|estou) entend|nao (tô|to|estou) entend|o que quer dizer/.test(t);
   }
 
   // ─── Avaliar resposta ───────────────────────────────────────────────────────
@@ -221,8 +215,8 @@ export default function TutorPage() {
 
     const conceptId = session.current.activeConceptId;
 
-    // Modo conversa: aluno ainda está tirando dúvidas — nunca avalia, nunca pontua
-    if (session.current.conversationMode === "conversation") {
+    // Heurística: mensagem claramente é uma dúvida → conversation endpoint (sem gabarito)
+    if (looksLikeQuestion(text)) {
       try {
         const res = await fetch("/api/tutor", {
           method: "POST",
@@ -253,7 +247,7 @@ export default function TutorPage() {
       return;
     }
 
-    // Modo avaliação: processa resposta do aluno
+    // Mensagem ambígua ou resposta → evaluation com detecção de intenção
     let evalResult: EvaluationLLMResponse;
     try {
       const res = await fetch("/api/tutor", {
@@ -283,12 +277,10 @@ export default function TutorPage() {
       return;
     }
 
-    // LLM detectou que era uma dúvida — entra no modo conversa explícito
+    // LLM detectou dúvida em mensagem ambígua — responde sem pontuar
     if (evalResult.type === "conversation") {
       addMessage("tutor", evalResult.response);
       session.current.conversationalTurns += 1;
-      session.current.conversationMode = "conversation";
-      setIsInConversation(true);
       setIsLoading(false);
       return;
     }
@@ -537,7 +529,15 @@ export default function TutorPage() {
       {/* Header */}
       <header className="flex-none h-10 flex items-center justify-between px-4 border-b border-border">
         <span className="text-sm font-medium">Euler</span>
-        <span className="text-xs text-muted-foreground">{profile.name}</span>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-muted-foreground">{profile.name}</span>
+          <button
+            onClick={() => auth && signOut(auth).then(() => router.replace("/"))}
+            className="text-[11px] text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+          >
+            Sair
+          </button>
+        </div>
 
         {/* Mobile: botão para abrir grafo */}
         <Sheet>
@@ -584,8 +584,6 @@ export default function TutorPage() {
             onSend={handleSend}
             onRetry={handleRetry}
             sessionGoal={sessionGoal}
-            isInConversation={isInConversation}
-            onReadyToAnswer={handleReadyToAnswer}
           />
         </main>
       </div>

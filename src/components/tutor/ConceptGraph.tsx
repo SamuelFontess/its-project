@@ -19,7 +19,7 @@ import type { ConceptId, StudentConcepts } from "@/types/domain";
 // ─── Paleta de status ─────────────────────────────────────────────────────────
 
 const STATUS_STYLES: Record<string, { bg: string; text: string; border: string }> = {
-  active:   { bg: "#18181B", text: "#FAFAFA", border: "#18181B" },
+  active:   { bg: "#FFFFFF", text: "#09090B", border: "#22C55E" },
   mastered: { bg: "#14532D", text: "#86EFAC", border: "#22C55E" },
   progress: { bg: "#3F3F46", text: "#FAFAFA", border: "#71717A" },
   unseen:   { bg: "#71717A", text: "#FAFAFA", border: "#52525B" },
@@ -64,15 +64,18 @@ function ConceptNode({ data }: { data: NodeData }) {
           opacity: 1,
           boxShadow:
             data.status === "active"
-              ? "0 0 0 2px #18181B, 0 2px 8px rgba(0,0,0,0.12)"
+              ? "0 0 0 2px #22C55E, 0 4px 16px rgba(34,197,94,0.30)"
               : "0 1px 3px rgba(0,0,0,0.06)",
           transition: "all 150ms ease",
           cursor: data.status === "blocked" || data.status === "active" ? "default" : "pointer",
           fontFamily: "inherit",
         }}
       >
-        <div style={{ fontSize: 9, opacity: 0.45, marginBottom: 2 }}>
-          {data.conceptId}
+        <div style={{ fontSize: 9, opacity: 0.45, marginBottom: 2, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <span>{data.conceptId}</span>
+          {data.status === "active" && (
+            <span style={{ color: "#22C55E", fontSize: 8, fontWeight: 600, letterSpacing: "0.02em" }}>● EM ESTUDO</span>
+          )}
         </div>
         <div style={{ fontSize: 11, lineHeight: 1.35 }}>{data.label}</div>
         {data.score > 0 && data.status !== "blocked" && (

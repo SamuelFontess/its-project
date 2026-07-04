@@ -37,7 +37,8 @@ import { ChatInterface } from "@/components/tutor/ChatInterface";
 import { ProgressPanel } from "@/components/tutor/ProgressPanel";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from "@/components/ui/sheet";
+import { LEVEL_LABELS } from "@/types/domain";
 
 // ─── Estado de sessão ─────────────────────────────────────────────────────────
 
@@ -194,8 +195,14 @@ export default function TutorPage() {
 
   function looksLikeQuestion(text: string): boolean {
     const t = text.toLowerCase().trim();
-    if (t.endsWith("?")) return true;
-    return /não entend|nao entend|n[aã]o sei|nao sei|pode (explicar|repetir|ajudar)|me (explica|ajuda)|como (assim|é que|funciona)|o que (é|significa|quer dizer)|por que (isso|é|seria)|explica aí|não (tô|to|estou) entend|nao (tô|to|estou) entend|o que quer dizer/.test(t);
+    // Marcadores explícitos de confusão — sempre dúvida independente de pontuação
+    if (/não entend|nao entend|n[aã]o (sei|consigo)|pode (explicar|repetir|ajudar)|me (explica|ajuda)|como (assim|é que|funciona niss)|o que (é|significa|quer dizer)|por que (isso|seria assim)|explica aí|n[aã]o (tô|to|estou) entend|o que quer dizer/.test(t)) return true;
+    // Termina em "?" SÓ se começar com palavra interrogativa
+    // Evita capturar respostas incertas como "acho que é o 2?" ou "seria 3?"
+    if (t.endsWith("?")) {
+      return /^(como|por que|porque|por quê|o que|qual|quais|quando|onde|quem|quanto|quantos|em que|de que|para que|pra que|você (pode|consegue|sabe)|dá pra|pode me|pode (explicar|repetir|dizer))/.test(t);
+    }
+    return false;
   }
 
   // ─── Avaliar resposta ───────────────────────────────────────────────────────
@@ -530,7 +537,46 @@ export default function TutorPage() {
       <header className="flex-none h-10 flex items-center justify-between px-4 border-b border-border">
         <span className="text-sm font-medium">Euler</span>
         <div className="flex items-center gap-3">
-          <span className="text-xs text-muted-foreground">{profile.name}</span>
+          {/* Mobile: botão para abrir grafo */}
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="sm" className="lg:hidden text-xs h-7 px-2">
+                Grafo
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-80 p-0 bg-background">
+              <SheetTitle className="sr-only">Grafo de conceitos</SheetTitle>
+              <SheetDescription className="sr-only">Visualização do grafo de conceitos e progresso</SheetDescription>
+              <div className="h-[70vh]">
+                <ConceptGraph
+                  concepts={profile.concepts}
+                  activeConceptId={activeConceptId}
+                  onNodeClick={handleNodeClick}
+                />
+              </div>
+              <ProgressPanel profile={profile} lastXpGain={lastXpGain} onXpGainShown={() => setLastXpGain(null)} />
+            </SheetContent>
+          </Sheet>
+
+          {/* Ajuda */}
+          <Sheet>
+            <SheetTrigger asChild>
+              <button className="text-[11px] text-muted-foreground/50 hover:text-muted-foreground transition-colors">
+                Ajuda
+              </button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-[340px] sm:w-[380px] overflow-y-auto">
+              <SheetHeader className="mb-5">
+                <SheetTitle className="text-base">Como funciona o Euler</SheetTitle>
+                <SheetDescription>
+                  Sistema Tutor Inteligente para Funções Matemáticas
+                </SheetDescription>
+              </SheetHeader>
+              <HelpContent />
+            </SheetContent>
+          </Sheet>
+
+          <span className="text-xs text-muted-foreground hidden sm:block">{profile.name}</span>
           <button
             onClick={() => auth && signOut(auth).then(() => router.replace("/"))}
             className="text-[11px] text-muted-foreground/50 hover:text-muted-foreground transition-colors"
@@ -538,25 +584,6 @@ export default function TutorPage() {
             Sair
           </button>
         </div>
-
-        {/* Mobile: botão para abrir grafo */}
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button variant="ghost" size="sm" className="lg:hidden text-xs">
-              Grafo
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="left" className="w-80 p-0 bg-background">
-            <div className="h-[70vh]">
-              <ConceptGraph
-                concepts={profile.concepts}
-                activeConceptId={activeConceptId}
-                onNodeClick={handleNodeClick}
-              />
-            </div>
-            <ProgressPanel profile={profile} lastXpGain={lastXpGain} onXpGainShown={() => setLastXpGain(null)} />
-          </SheetContent>
-        </Sheet>
       </header>
 
       {/* Corpo */}
@@ -754,6 +781,144 @@ function GoalScreen({
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+// ─── Tela de ajuda ────────────────────────────────────────────────────────────
+
+function HelpContent() {
+  const nodeColors: { label: string; bg: string; border: string; text: string; desc: string }[] = [
+    { label: "Em estudo", bg: "#FFFFFF", border: "#22C55E", text: "#09090B", desc: "Conceito que você está estudando agora" },
+    { label: "Dominado",  bg: "#14532D", border: "#22C55E", text: "#86EFAC", desc: "Critério atingido: ≥ 80 pts e 3 acertos seguidos" },
+    { label: "Em progresso", bg: "#3F3F46", border: "#71717A", text: "#FAFAFA", desc: "Você já tentou mas ainda não dominou" },
+    { label: "Disponível", bg: "#71717A", border: "#52525B", text: "#FAFAFA", desc: "Pré-requisitos dominados — clique para estudar" },
+    { label: "Bloqueado", bg: "#D4D4D8", border: "#A1A1AA", text: "#52525B", desc: "Domine os pré-requisitos primeiro" },
+  ];
+
+  const scoring = [
+    { event: "Acerto direto",   pts: "+20", xp: "+10 XP" },
+    { event: "Com dica 1",      pts: "+12", xp: "+10 XP" },
+    { event: "Com dica 2",      pts: "+6",  xp: "+10 XP" },
+    { event: "Com dica 3",      pts: "+2",  xp: "+10 XP" },
+    { event: "Erro",            pts: "−10", xp: "—" },
+    { event: "Dominar conceito", pts: "—",  xp: "+50 XP" },
+  ];
+
+  const levels = [1, 2, 3, 4, 5].map((l) => ({
+    n: l,
+    label: LEVEL_LABELS[l] ?? "Especialista",
+  }));
+
+  const badges: { label: string; desc: string }[] = [
+    { label: "Primeiro passo",    desc: "Dominar o primeiro conceito" },
+    { label: "Em sequência",      desc: "3 acertos consecutivos" },
+    { label: "Função afim",       desc: "Dominar Função afim" },
+    { label: "Função quadrática", desc: "Dominar Função quadrática" },
+    { label: "Completo",          desc: "Dominar todos os 12 conceitos" },
+    { label: "Sem dicas",         desc: "Dominar um conceito sem usar dicas" },
+    { label: "Retomada",          desc: "Superar um conceito após retrocesso" },
+  ];
+
+  return (
+    <div className="space-y-6 text-sm pb-4">
+
+      {/* Como interagir */}
+      <section className="space-y-2">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Como interagir</h3>
+        <p className="text-sm text-foreground/80 leading-relaxed">
+          Use a caixa de texto para <strong>responder à pergunta</strong> do tutor ou para <strong>tirar uma dúvida</strong> — o Euler detecta automaticamente sua intenção.
+        </p>
+        <div className="border border-border rounded p-3 space-y-1.5">
+          <div className="flex gap-2">
+            <span className="text-[10px] font-medium text-primary/80 shrink-0 mt-0.5">RESPOSTA</span>
+            <span className="text-xs text-muted-foreground">"É uma relação onde cada x tem exatamente um y"</span>
+          </div>
+          <div className="flex gap-2">
+            <span className="text-[10px] font-medium text-muted-foreground shrink-0 mt-0.5">DÚVIDA</span>
+            <span className="text-xs text-muted-foreground">"Como funciona isso?" ou "não entendi a pergunta"</span>
+          </div>
+        </div>
+      </section>
+
+      {/* Grafo */}
+      <section className="space-y-2">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Grafo de conceitos</h3>
+        <p className="text-xs text-muted-foreground">Clique em qualquer nó disponível para escolher o que estudar.</p>
+        <div className="space-y-2">
+          {nodeColors.map(({ label, bg, border, text, desc }) => (
+            <div key={label} className="flex items-center gap-3">
+              <div
+                className="shrink-0 rounded px-2 py-0.5 text-[10px] font-medium border"
+                style={{ background: bg, color: text, borderColor: border }}
+              >
+                {label}
+              </div>
+              <span className="text-xs text-muted-foreground">{desc}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Pontuação */}
+      <section className="space-y-2">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Sistema de pontuação</h3>
+        <p className="text-xs text-muted-foreground">Cada conceito tem uma pontuação de 0 a 100. Domínio = ≥ 80 pts com 3 acertos seguidos.</p>
+        <div className="border border-border rounded overflow-hidden">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="border-b border-border bg-secondary/30">
+                <th className="text-left px-3 py-1.5 font-medium text-muted-foreground">Evento</th>
+                <th className="text-right px-3 py-1.5 font-medium text-muted-foreground">Pts</th>
+                <th className="text-right px-3 py-1.5 font-medium text-muted-foreground">XP</th>
+              </tr>
+            </thead>
+            <tbody>
+              {scoring.map(({ event, pts, xp }) => (
+                <tr key={event} className="border-b border-border/50 last:border-0">
+                  <td className="px-3 py-1.5 text-foreground/80">{event}</td>
+                  <td className={`px-3 py-1.5 text-right tabular-nums ${pts.startsWith("+") ? "text-primary" : pts.startsWith("−") ? "text-destructive" : "text-muted-foreground"}`}>{pts}</td>
+                  <td className={`px-3 py-1.5 text-right tabular-nums ${xp.startsWith("+") ? "text-primary" : "text-muted-foreground"}`}>{xp}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      {/* Níveis */}
+      <section className="space-y-2">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Níveis</h3>
+        <div className="flex flex-wrap gap-1.5">
+          {levels.map(({ n, label }) => (
+            <span key={n} className="text-[11px] border border-border rounded px-2 py-0.5 text-muted-foreground">
+              {n}. {label}
+            </span>
+          ))}
+        </div>
+      </section>
+
+      {/* Retrocesso */}
+      <section className="space-y-2">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Retrocesso automático</h3>
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          Se sua pontuação cair abaixo de 30 após 3 ou mais tentativas, o Euler retorna ao conceito pré-requisito para reforçar a base antes de continuar.
+        </p>
+      </section>
+
+      {/* Badges */}
+      <section className="space-y-2">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Conquistas</h3>
+        <div className="space-y-1.5">
+          {badges.map(({ label, desc }) => (
+            <div key={label} className="flex items-center gap-2">
+              <span className="text-[10px] font-medium border border-border/60 rounded px-2 py-0.5 text-muted-foreground shrink-0">{label}</span>
+              <span className="text-xs text-muted-foreground">{desc}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
     </div>
   );
 }

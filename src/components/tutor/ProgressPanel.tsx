@@ -62,15 +62,19 @@ export function ProgressPanel({ profile, lastXpGain, onXpGainShown }: ProgressPa
               <TooltipTrigger asChild>
                 <span className="text-[10px] text-muted-foreground/40 cursor-help select-none">?</span>
               </TooltipTrigger>
-              <TooltipContent side="right" className="text-xs max-w-[230px]">
-                <p className="font-medium mb-1.5">Sistema de pontuação</p>
-                <div className="space-y-0.5 text-muted-foreground">
-                  <p>Acerto direto — +20 pts · +10 XP</p>
-                  <p>Com dica 1 — +12 pts · +10 XP</p>
-                  <p>Com dica 2 — +6 pts · +10 XP</p>
-                  <p>Com dica 3 — +2 pts · +10 XP</p>
-                  <p>Erro — −10 pts no conceito</p>
-                  <p className="text-foreground mt-1">Domínio (≥80 pts + 3 acertos) — +50 XP bônus</p>
+              <TooltipContent side="right" sideOffset={6} className="text-xs w-[280px] p-3">
+                <p className="font-medium mb-2">Sistema de pontuação</p>
+                <div className="space-y-1 text-muted-foreground">
+                  <div className="grid grid-cols-[1fr_auto_auto] gap-x-3 gap-y-0.5">
+                    <span>Acerto direto</span><span className="text-primary tabular-nums">+20 pts</span><span className="text-primary tabular-nums">+10 XP</span>
+                    <span>Com dica 1</span>    <span className="text-primary tabular-nums">+12 pts</span><span className="text-primary tabular-nums">+10 XP</span>
+                    <span>Com dica 2</span>    <span className="text-primary tabular-nums">+6 pts</span> <span className="text-primary tabular-nums">+10 XP</span>
+                    <span>Com dica 3</span>    <span className="text-primary tabular-nums">+2 pts</span> <span className="text-primary tabular-nums">+10 XP</span>
+                    <span>Erro</span>          <span className="text-destructive tabular-nums">−10 pts</span><span className="tabular-nums">—</span>
+                  </div>
+                  <div className="border-t border-border/50 mt-1.5 pt-1.5 text-foreground/80">
+                    Domínio (≥80 pts + 3 acertos consecutivos) — <span className="text-primary">+50 XP</span> bônus
+                  </div>
                 </div>
               </TooltipContent>
             </Tooltip>

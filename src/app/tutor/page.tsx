@@ -55,6 +55,8 @@ interface SessionRef {
   backtrackedConceptIds: Set<ConceptId>;
   /** Turnos conversacionais consecutivos sem tentativa de resposta na pergunta atual */
   conversationalTurns: number;
+  /** Quando "conversation", bloqueia avaliação até o aluno clicar "Quero responder" */
+  conversationMode: "answer" | "conversation";
 }
 
 // ─── Componente ───────────────────────────────────────────────────────────────
@@ -69,6 +71,7 @@ export default function TutorPage() {
   const [completed, setCompleted] = useState(false);
   const [goalPending, setGoalPending] = useState(false);
   const [lastXpGain, setLastXpGain] = useState<number | null>(null);
+  const [isInConversation, setIsInConversation] = useState(false);
 
   // Ref para estado de sessão (não precisa re-render)
   const session = useRef<SessionRef>({
@@ -83,6 +86,7 @@ export default function TutorPage() {
     sessionGoal: "",
     backtrackedConceptIds: new Set(),
     conversationalTurns: 0,
+    conversationMode: "answer",
   });
 
   // Auth gate + carregamento do perfil
@@ -153,6 +157,8 @@ export default function TutorPage() {
     session.current.currentExpectedAnswer = question.expectedAnswer;
     session.current.currentQuestionHints = question.hints;
     session.current.conversationalTurns = 0;
+    session.current.conversationMode = "answer";
+    setIsInConversation(false);
 
     const history = getHistory();
     setIsLoading(true);
@@ -190,6 +196,14 @@ export default function TutorPage() {
     }
   }, []);
 
+  // ─── Modo conversa: aluno sinaliza que quer responder ────────────────────────
+
+  function handleReadyToAnswer() {
+    session.current.conversationMode = "answer";
+    session.current.conversationalTurns = 0;
+    setIsInConversation(false);
+  }
+
   // ─── Avaliar resposta ───────────────────────────────────────────────────────
 
   const handleSend = useCallback(async (text: string) => {
@@ -207,6 +221,39 @@ export default function TutorPage() {
 
     const conceptId = session.current.activeConceptId;
 
+    // Modo conversa: aluno ainda está tirando dúvidas — nunca avalia, nunca pontua
+    if (session.current.conversationMode === "conversation") {
+      try {
+        const res = await fetch("/api/tutor", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            mode: "conversation",
+            conceptName: CONCEPTS[conceptId].name,
+            question: session.current.currentQuestionText,
+            studentMessage: text,
+            history,
+            conversationalTurns: session.current.conversationalTurns,
+          }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err?.error ?? "Erro ao conectar com o tutor.");
+        }
+        const data = await res.json();
+        addMessage("tutor", data.text);
+        session.current.conversationalTurns += 1;
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Erro de conexão com o tutor.";
+        setChatError(msg);
+        session.current.pendingRetry = () => handleSend(text);
+      } finally {
+        setIsLoading(false);
+      }
+      return;
+    }
+
+    // Modo avaliação: processa resposta do aluno
     let evalResult: EvaluationLLMResponse;
     try {
       const res = await fetch("/api/tutor", {
@@ -236,10 +283,12 @@ export default function TutorPage() {
       return;
     }
 
-    // Aluno tirou dúvida / pediu explicação — responde sem pontuar
+    // LLM detectou que era uma dúvida — entra no modo conversa explícito
     if (evalResult.type === "conversation") {
       addMessage("tutor", evalResult.response);
       session.current.conversationalTurns += 1;
+      session.current.conversationMode = "conversation";
+      setIsInConversation(true);
       setIsLoading(false);
       return;
     }
@@ -535,6 +584,8 @@ export default function TutorPage() {
             onSend={handleSend}
             onRetry={handleRetry}
             sessionGoal={sessionGoal}
+            isInConversation={isInConversation}
+            onReadyToAnswer={handleReadyToAnswer}
           />
         </main>
       </div>

@@ -103,7 +103,7 @@ export interface ChatMessage {
 
 // ─── API Routes ──────────────────────────────────────────────────────────────
 
-export type LLMMode = "diagnostic" | "tutor" | "evaluation" | "backtrack";
+export type LLMMode = "diagnostic" | "tutor" | "evaluation" | "backtrack" | "conversation";
 
 export interface DiagnosticPayload {
   mode: "diagnostic";
@@ -146,11 +146,22 @@ export interface BacktrackPayload {
   conceptScore: number;
 }
 
+export interface ConversationPayload {
+  mode: "conversation";
+  conceptName: string;
+  /** Texto da pergunta ativa — contexto sem revelar gabarito */
+  question: string;
+  studentMessage: string;
+  history: ChatMessage[];
+  conversationalTurns: number;
+}
+
 export type LLMPayload =
   | DiagnosticPayload
   | TutorPayload
   | EvaluationPayload
-  | BacktrackPayload;
+  | BacktrackPayload
+  | ConversationPayload;
 
 export interface DiagnosticLLMResponse {
   correct: boolean;

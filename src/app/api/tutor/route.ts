@@ -11,7 +11,7 @@ const GROQ_MODEL = "llama-3.1-8b-instant";
 // ─── Builders de Prompt ───────────────────────────────────────────────────────
 
 function buildSystemPrompt(mode: LLMPayload["mode"]): string {
-  if (mode === "tutor" || mode === "backtrack") {
+  if (mode === "tutor" || mode === "backtrack" || mode === "conversation") {
     return `Você é Euler, um tutor de matemática direto e encorajador.
 Você nunca menciona que é uma IA, modelo de linguagem ou qualquer tecnologia.
 Comunique-se em português do Brasil, de forma conversacional e objetiva.
@@ -104,6 +104,31 @@ Responda: {"type": "conversation", "response": "..."}
 Responda SOMENTE com JSON válido, sem texto adicional.`;
     }
 
+    case "conversation": {
+      const historyText =
+        payload.history.length > 0
+          ? payload.history
+              .map((m) => `${m.role === "tutor" ? "Euler" : "Aluno"}: ${m.content}`)
+              .join("\n")
+          : "";
+
+      const nudge =
+        payload.conversationalTurns >= 2
+          ? "\n- Ao final, encoraje o aluno a tentar responder quando se sentir pronto"
+          : "";
+
+      return `${historyText ? `HISTÓRICO:\n${historyText}\n\n` : ""}CONTEXTO:
+- Conceito em estudo: ${payload.conceptName}
+- Pergunta que foi feita ao aluno: ${payload.question}
+- Mensagem do aluno: ${payload.studentMessage}
+
+O aluno está tirando uma dúvida ou pedindo explicação. Responda como Euler:
+- Explique o CONCEITO GERAL (o que é, como funciona, por que importa) sem responder à pergunta diretamente
+- Use analogia simples ou exemplo concreto se ajudar
+- Máximo 3 frases${nudge}
+- NUNCA responda à pergunta feita ao aluno — apenas prepare o terreno para que ele pense`;
+    }
+
     case "backtrack": {
       return `Contexto:
 - Aluno: ${payload.studentName}
@@ -150,8 +175,8 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         model: GROQ_MODEL,
         messages,
-        temperature: payload.mode === "tutor" || payload.mode === "backtrack" ? 0.7 : 0.1,
-        max_tokens: payload.mode === "tutor" || payload.mode === "backtrack" ? 1024 : 512,
+        temperature: payload.mode === "tutor" || payload.mode === "backtrack" || payload.mode === "conversation" ? 0.7 : 0.1,
+        max_tokens: payload.mode === "tutor" || payload.mode === "backtrack" || payload.mode === "conversation" ? 1024 : 512,
       }),
     });
 

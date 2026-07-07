@@ -29,11 +29,13 @@ function buildUserPrompt(payload: LLMPayload): string {
       return `Avalie se o aluno demonstrou compreensão do conceito.
 
 PERGUNTA: ${payload.question}
-RESPOSTA ESPERADA: ${payload.expectedAnswer}
+GABARITO (uso interno): ${payload.expectedAnswer}
 RESPOSTA DO ALUNO: ${payload.studentAnswer}
 
-Responda SOMENTE com este JSON (sem mais nada):
-{"correct": true}`;
+CRITÉRIO: correct = true SOMENTE se a ideia central do gabarito foi demonstrada, mesmo com palavras diferentes ou linguagem informal. correct = false se a resposta estiver errada, vaga, "não sei", em branco ou não relacionada à pergunta.
+
+Responda SOMENTE com JSON válido, sem texto adicional:
+{"correct": true} ou {"correct": false}`;
     }
 
     case "tutor": {
@@ -88,14 +90,15 @@ TENTATIVAS COM DICA: ${payload.hintLevel}/3
 
 TAREFA: Determine se o aluno está tentando responder à pergunta OU pedindo ajuda/explicação/esclarecimento.
 
-Se for TENTATIVA DE RESPOSTA (afirmação, resposta direta, mesmo que incerta):
-- correct: true se demonstrou a ideia central, mesmo com palavras diferentes ou resposta curta
-- correct: false se a resposta está errada conceitualmente, vaga ("não sei", "talvez") ou em branco
-- Feedback de ACERTO: confirmação natural em 1 frase; varie o estilo (confirmação direta, elogio ao raciocínio, etc.)
-- Feedback de ERRO: aponte o que está faltando ou errado — NUNCA cite o gabarito, nunca diga "a resposta correta é..."
+Se for TENTATIVA DE RESPOSTA (afirmação, resposta direta, mesmo com incerteza):
+- Avalie com rigor: compare a ideia central da resposta do aluno com o GABARITO
+- correct: true SOMENTE se a ideia central do gabarito foi demonstrada — aceite paráfrase e linguagem informal
+- correct: false se: (a) a resposta estiver errada conceitualmente, (b) incompleta de forma que mostre não-compreensão, (c) vaga como "não sei" / "talvez" / "acho que sim", ou (d) em branco
+- Feedback de ACERTO: confirmação natural em 1 frase; varie o estilo
+- Feedback de ERRO: aponte especificamente o que está faltando ou errado — NUNCA cite o gabarito, nunca diga "a resposta correta é..."
 Responda: {"type": "answer", "correct": true/false, "feedback": "..."}
 
-Se for DÚVIDA ou PEDIDO DE EXPLICAÇÃO (pergunta, "não entendi", "pode explicar", "por que errei", etc.):
+Se for DÚVIDA ou PEDIDO DE EXPLICAÇÃO (pergunta direta, "não entendi", "pode explicar", "por que errei", etc.):
 - Explique o conceito ou esclareça a dúvida sem revelar a resposta à pergunta
 - Máximo 3 frases, tom de tutor direto e encorajador${nudge}
 - NUNCA revele o gabarito nem a resposta esperada

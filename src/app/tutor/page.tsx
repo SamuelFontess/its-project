@@ -832,11 +832,11 @@ function HelpContent() {
         <div className="border border-border rounded p-3 space-y-1.5">
           <div className="flex gap-2">
             <span className="text-[10px] font-medium text-primary/80 shrink-0 mt-0.5">RESPOSTA</span>
-            <span className="text-xs text-muted-foreground">"É uma relação onde cada x tem exatamente um y"</span>
+            <span className="text-xs text-muted-foreground">&quot;É uma relação onde cada x tem exatamente um y&quot;</span>
           </div>
           <div className="flex gap-2">
             <span className="text-[10px] font-medium text-muted-foreground shrink-0 mt-0.5">DÚVIDA</span>
-            <span className="text-xs text-muted-foreground">"Como funciona isso?" ou "não entendi a pergunta"</span>
+            <span className="text-xs text-muted-foreground">&quot;Como funciona isso?&quot; ou &quot;não entendi a pergunta&quot;</span>
           </div>
         </div>
       </section>
